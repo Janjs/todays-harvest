@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Today's Harvest",
+    "slug": "todays-harvest",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.todaysharvest",
+      "icon": "./assets/icon.png",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Today's Harvest needs your location to show produce in season near you."
+      }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Today's Harvest uses your location to fetch seasonal produce for your area."
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "TodaysHarvestWidget",
+              "displayName": "Today's Harvest",
+              "description": "Fruit currently in season for your location.",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            }
+          ]
+        }
+      ]
+    ],
+    "extra": {
+      "convexUrl": "${CONVEX_URL}"
+    }
+  }
+}

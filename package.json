@@ -1,0 +1,34 @@
+{
+  "name": "todays-harvest",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy"
+  },
+  "dependencies": {
+    "@expo/ui": "55.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "convex": "^1.16.0",
+    "expo": "~55.0.6",
+    "expo-constants": "~55.0.7",
+    "expo-location": "~55.1.2",
+    "expo-status-bar": "~55.0.4",
+    "expo-widgets": "~55.0.4",
+    "openai": "^4.67.3",
+    "react": "19.2.0",
+    "react-native": "0.83.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "@types/react": "~19.2.14",
+    "typescript": "~5.9.3"
+  }
+}
