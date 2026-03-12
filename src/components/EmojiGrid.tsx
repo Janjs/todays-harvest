@@ -60,16 +60,17 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12
+    justifyContent: 'space-between',
+    rowGap: 12
   },
   item: {
-    width: 72,
+    width: '23.5%',
     gap: 6,
     alignItems: 'center'
   },
   cell: {
-    width: 72,
-    height: 72,
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',

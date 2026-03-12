@@ -21,37 +21,70 @@ export function HomeScreen(props: {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Today's Harvest</Text>
-      <View style={styles.locationRow}>
-        <View style={styles.locationTextWrap}>
-          <View style={styles.countryRow}>
-            {countryFlagUri ? <Image source={{ uri: countryFlagUri }} style={styles.flagIcon} /> : null}
-            <Text style={styles.subtitle}>{countryName}</Text>
-          </View>
-          {locationParts ? <Text style={styles.subLocation}>{locationParts}</Text> : null}
+      <View style={styles.topContent}>
+        <View style={styles.headerGroup}>
+          <Text style={styles.title}>Today's Harvest</Text>
+          <Text style={styles.intro}>These fruits are in season near you this month.</Text>
         </View>
-        <Pressable style={styles.updateButton} onPress={onUpdateLocation}>
-          <Ionicons name="pencil" size={18} color="#2D7C4D" />
-          <Text style={styles.updateButtonText}>Edit</Text>
-        </Pressable>
+
+        <View style={styles.locationRow}>
+          <View style={styles.locationTextWrap}>
+            <View style={styles.countryRow}>
+              {countryFlagUri ? <Image source={{ uri: countryFlagUri }} style={styles.flagIcon} /> : null}
+              <Text style={styles.subtitle}>{countryName}</Text>
+            </View>
+            {locationParts ? <Text style={styles.subLocation}>{locationParts}</Text> : null}
+          </View>
+          <Pressable style={styles.updateButton} onPress={onUpdateLocation}>
+            <Ionicons name="pencil" size={15} color="#2D7C4D" style={styles.updateButtonIcon} />
+            <Text style={styles.updateButtonText}>Edit</Text>
+          </Pressable>
+        </View>
       </View>
-      <Text style={styles.month}>{monthLabel(month)}</Text>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <EmojiGrid items={data?.items.map((item) => ({ emoji: item.emoji, name: item.name })) ?? []} />
+      <View style={styles.fruitSection}>
+        <Text style={styles.month}>{monthLabel(month)}</Text>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <EmojiGrid items={data?.items.map((item) => ({ emoji: item.emoji, name: item.name })) ?? []} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12
+    flex: 1
+  },
+  topContent: {
+    gap: 18
+  },
+  headerGroup: {
+    gap: 8
+  },
+  fruitSection: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 0,
+    marginBottom: 16,
+    marginTop: 12,
+    paddingTop: 20,
+    paddingHorizontal: 12,
+    paddingBottom: 0,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    gap: 16
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
     color: '#223127'
+  },
+  intro: {
+    fontSize: 15,
+    color: '#3D4B40',
+    lineHeight: 20
   },
   subtitle: {
     fontSize: 17,
@@ -59,13 +92,15 @@ const styles = StyleSheet.create({
   },
   locationRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 12
+    gap: 12,
+    marginTop: 8
   },
   locationTextWrap: {
     flexShrink: 1,
-    gap: 2
+    gap: 2,
+    paddingLeft: 6
   },
   countryRow: {
     flexDirection: 'row',
@@ -83,22 +118,28 @@ const styles = StyleSheet.create({
   updateButton: {
     borderWidth: 1,
     borderColor: '#2D7C4D',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4
+    alignSelf: 'center',
+    gap: 6
+  },
+  updateButtonIcon: {
+    marginTop: 1
   },
   updateButtonText: {
     color: '#2D7C4D',
     fontWeight: '600',
-    fontSize: 14
+    fontSize: 13,
+    lineHeight: 16
   },
   month: {
     fontSize: 22,
     fontWeight: '600',
-    color: '#223127'
+    color: '#223127',
+    marginLeft: 6
   },
   subLocation: {
     color: '#4E5A52',

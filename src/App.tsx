@@ -137,7 +137,7 @@ function HarvestApp() {
   }, [draftLocation, refreshSeasonal]);
 
   return (
-    <SafeAreaView style={styles.app}>
+    <SafeAreaView style={styles.app} edges={['top']}>
       <View style={styles.content}>
         {isBooting ? <Text style={styles.info}>Loading location…</Text> : null}
 
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 20,
-    paddingBottom: 12,
+    paddingBottom: 0,
     gap: 12
   },
   info: {
