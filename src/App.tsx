@@ -1,23 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { ConvexProvider, useAction, useMutation } from 'convex/react';
 import * as Location from 'expo-location';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../convex/_generated/api';
 import { SeasonalResponse } from '../shared/types';
 import { convex } from './lib/convex';
-import { buildCacheKey } from './lib/cacheKey';
 import { currentMonthInDeviceTimezone, monthLabel } from './lib/date';
 import { requestAndResolveLocation, ResolvedLocation } from './lib/location';
 import { writeWidgetPayload } from './lib/widget';
 import { HomeScreen } from './screens/HomeScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
-import { DeveloperScreen } from './screens/DeveloperScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 
-type Tab = 'home' | 'settings' | 'developer';
-
 function HarvestApp() {
-  const [tab, setTab] = useState<Tab>('home');
   const [permission, setPermission] = useState<Location.PermissionStatus | 'undetermined'>('undetermined');
   const [isBooting, setIsBooting] = useState(true);
   const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
@@ -29,33 +24,26 @@ function HarvestApp() {
   const [location, setLocation] = useState<ResolvedLocation | null>(null);
   const [data, setData] = useState<SeasonalResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   const month = useMemo(() => currentMonthInDeviceTimezone(), []);
 
   const seedCatalog = useMutation(api.catalog.seedCatalog);
   const getSeasonalItems = useAction(api.seasonal.getSeasonalItems);
 
-  const locationLabel = useMemo(() => {
-    if (!location) {
-      return 'Location unavailable';
-    }
-    return [location.city, location.region, location.countryCode].filter(Boolean).join(' • ');
-  }, [location]);
-
   const refreshSeasonal = useCallback(
-    async (forceRegenerate = false) => {
-      if (!location?.countryCode) {
-        return;
+    async (targetLocation: ResolvedLocation, forceRegenerate = false) => {
+      if (!targetLocation.countryCode) {
+        return null;
       }
 
-      setIsLoading(true);
+      setIsLoadingLocation(true);
       setError(null);
 
       try {
         const response = await getSeasonalItems({
-          countryCode: location.countryCode,
-          region: location.region ?? undefined,
+          countryCode: targetLocation.countryCode,
+          region: targetLocation.region ?? undefined,
           month,
           category: 'fruit',
           forceRegenerate
@@ -63,20 +51,27 @@ function HarvestApp() {
 
         setData(response);
 
+        const nextLocationLabel = [targetLocation.city, targetLocation.region, targetLocation.countryCode]
+          .filter(Boolean)
+          .join(' • ');
+
         await writeWidgetPayload({
           title: "Today's Harvest",
           emojis: response.items.slice(0, 6).map((item) => item.emoji),
-          locationLabel,
+          locationLabel: nextLocationLabel || 'Location unavailable',
           monthLabel: monthLabel(response.month),
           updatedAt: response.updatedAt
         });
+
+        return response;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch seasonal data.');
+        return null;
       } finally {
-        setIsLoading(false);
+        setIsLoadingLocation(false);
       }
     },
-    [getSeasonalItems, location, locationLabel, month]
+    [getSeasonalItems, month]
   );
 
   useEffect(() => {
@@ -117,20 +112,7 @@ function HarvestApp() {
     };
   }, [seedCatalog]);
 
-  useEffect(() => {
-    void refreshSeasonal(false);
-  }, [refreshSeasonal]);
-
-  const cacheKey = location
-    ? buildCacheKey({
-        countryCode: location.countryCode,
-        region: location.region,
-        month,
-        category: 'fruit'
-      })
-    : '';
-
-  const handleOnboardingContinue = useCallback(() => {
+  const handleOnboardingContinue = useCallback(async () => {
     const countryCode = draftLocation.countryCode.trim().toUpperCase();
     const region = draftLocation.region?.trim() || null;
     const city = draftLocation.city?.trim() || null;
@@ -141,13 +123,18 @@ function HarvestApp() {
     }
 
     setError(null);
-    setLocation({
+    const nextLocation = {
       countryCode,
       region,
       city
-    });
+    };
+    setLocation(nextLocation);
+    const response = await refreshSeasonal(nextLocation, false);
+    if (!response) {
+      return;
+    }
     setIsOnboardingComplete(true);
-  }, [draftLocation]);
+  }, [draftLocation, refreshSeasonal]);
 
   return (
     <SafeAreaView style={styles.app}>
@@ -165,71 +152,37 @@ function HarvestApp() {
                 setError(null);
               }
             }}
+            isSubmitting={isLoadingLocation}
             onContinue={handleOnboardingContinue}
           />
         ) : null}
 
-        {!isBooting && isOnboardingComplete && tab === 'home' ? (
+        {!isBooting && isOnboardingComplete ? (
           <HomeScreen
-            locationLabel={locationLabel}
+            location={location}
             month={month}
             data={data}
-            isLoading={isLoading}
             error={error}
-          />
-        ) : null}
-
-        {!isBooting && isOnboardingComplete && tab === 'settings' ? (
-          <SettingsScreen
-            permissionStatus={permission}
-            cacheKey={cacheKey}
-            source={data ? `${data.source}/${data.cacheStatus}` : 'N/A'}
-            onRefresh={() => {
-              void refreshSeasonal(false);
-            }}
-            onToggleDeveloper={() => setTab('developer')}
-          />
-        ) : null}
-
-        {!isBooting && isOnboardingComplete && tab === 'developer' ? (
-          <DeveloperScreen
-            data={data}
-            onRegenerate={() => {
-              void refreshSeasonal(true);
+            onUpdateLocation={() => {
+              if (location) {
+                setDraftLocation(location);
+              }
+              setIsOnboardingComplete(false);
             }}
           />
         ) : null}
       </View>
-
-      {!isBooting && isOnboardingComplete ? (
-        <View style={styles.tabs}>
-          <TabButton label="Home" active={tab === 'home'} onPress={() => setTab('home')} />
-          <TabButton label="Settings" active={tab === 'settings'} onPress={() => setTab('settings')} />
-        </View>
-      ) : null}
-
-      {!isBooting && isOnboardingComplete && tab === 'developer' ? (
-        <Pressable style={styles.devClose} onPress={() => setTab('settings')}>
-          <Text style={styles.devCloseText}>Close developer tools</Text>
-        </Pressable>
-      ) : null}
     </SafeAreaView>
-  );
-}
-
-function TabButton(props: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={[styles.tabButton, props.active ? styles.tabButtonActive : null]} onPress={props.onPress}>
-      <Text style={[styles.tabText, props.active ? styles.tabTextActive : null]}>{props.label}</Text>
-    </Pressable>
   );
 }
 
 export default function App() {
   return (
-    <ConvexProvider client={convex}>
-      <HarvestApp />
-    </ConvexProvider>
+    <SafeAreaProvider>
+      <ConvexProvider client={convex}>
+        <HarvestApp />
+      </ConvexProvider>
+    </SafeAreaProvider>
   );
 }
 
@@ -247,44 +200,5 @@ const styles = StyleSheet.create({
   },
   info: {
     color: '#4E5A52'
-  },
-  tabs: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 8
-  },
-  tabButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#C8BCA7'
-  },
-  tabButtonActive: {
-    backgroundColor: '#2D7C4D',
-    borderColor: '#2D7C4D'
-  },
-  tabText: {
-    color: '#3D4B40',
-    fontWeight: '600'
-  },
-  tabTextActive: {
-    color: '#FFFFFF'
-  },
-  devClose: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#A15B1F',
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center'
-  },
-  devCloseText: {
-    color: '#A15B1F',
-    fontWeight: '600'
   }
 });

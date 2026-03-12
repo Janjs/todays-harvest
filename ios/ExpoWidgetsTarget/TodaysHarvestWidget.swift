@@ -38,12 +38,12 @@ private struct TodaysHarvestWidgetEntryView: View {
     }
   }
 
-  private var columns: [GridItem] {
+  private var columnCount: Int {
     switch family {
     case .systemSmall:
-      return Array(repeating: GridItem(.flexible(), spacing: 0), count: 2)
+      return 2
     default:
-      return Array(repeating: GridItem(.flexible(), spacing: 0), count: 3)
+      return 3
     }
   }
 
@@ -72,27 +72,40 @@ private struct TodaysHarvestWidgetEntryView: View {
     ZStack {
       Color.white
 
-      Rectangle()
-        .fill(Color(red: 0.97, green: 0.95, blue: 0.89))
-        .overlay(
-          LazyVGrid(columns: columns, alignment: .center, spacing: 0) {
-            ForEach(Array(displayedEmojis.enumerated()), id: \.offset) { _, emoji in
-              Group {
-                if let image = emojiImage(for: emoji) {
-                  Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                } else {
-                  Color.clear
-                }
-              }
-              .frame(width: 36, height: 36)
-              .frame(maxWidth: .infinity, minHeight: 42)
-            }
-          }
-          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+      GeometryReader { proxy in
+        let rows = max(Int(ceil(Double(displayedEmojis.count) / Double(columnCount))), 1)
+        let widgetWidth = proxy.size.width
+        let widgetHeight = proxy.size.height
+        let preferredGap = family == .systemSmall ? min(widgetWidth, widgetHeight) * 0.16 : min(widgetWidth, widgetHeight) * 0.12
+        let maxGapForWidth = max((widgetWidth - CGFloat(columnCount) * 24) / CGFloat(columnCount + 1), 8)
+        let maxGapForHeight = max((widgetHeight - CGFloat(rows) * 24) / CGFloat(rows + 1), 8)
+        let gap = min(preferredGap, maxGapForWidth, maxGapForHeight)
+        let iconSize = min(
+          (widgetWidth - gap * CGFloat(columnCount + 1)) / CGFloat(columnCount),
+          (widgetHeight - gap * CGFloat(rows + 1)) / CGFloat(rows)
         )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        let gridWidth = (iconSize * CGFloat(columnCount)) + (gap * CGFloat(columnCount - 1))
+        let gridHeight = (iconSize * CGFloat(rows)) + (gap * CGFloat(max(rows - 1, 0)))
+        let centeredColumns = Array(repeating: GridItem(.fixed(iconSize), spacing: gap), count: columnCount)
+
+        LazyVGrid(columns: centeredColumns, spacing: gap) {
+          ForEach(Array(displayedEmojis.enumerated()), id: \.offset) { _, emoji in
+            Group {
+              if let image = emojiImage(for: emoji) {
+                Image(uiImage: image)
+                  .resizable()
+                  .scaledToFit()
+              } else {
+                Color.clear
+              }
+            }
+            .frame(width: iconSize, height: iconSize)
+          }
+        }
+        .frame(width: gridWidth, height: gridHeight, alignment: .center)
+        .padding(gap)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+      }
     }
   }
 }
