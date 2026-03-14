@@ -10,8 +10,9 @@ export async function writeWidgetPayload(payload: WidgetPayload): Promise<void> 
     const { todaysHarvestWidget } = await import('../../widgets/TodaysHarvestWidget');
     todaysHarvestWidget.updateSnapshot(payload);
     todaysHarvestWidget.reload();
-  } catch {
-    // no-op
+  } catch (error) {
+    // Widget APIs may be unavailable in non-widget runtime environments.
+    console.warn('Failed to push widget payload', error);
   }
 }
 

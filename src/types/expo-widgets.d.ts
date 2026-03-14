@@ -1,13 +1,27 @@
 import type * as React from 'react';
 
 declare module 'expo-widgets' {
-  export function createWidget(config: {
-    name: string;
-    render: (props: { data?: unknown }) => React.ReactNode;
-  }): unknown;
+  export type WidgetEnvironment = {
+    date: Date;
+    widgetFamily:
+      | 'systemSmall'
+      | 'systemMedium'
+      | 'systemLarge'
+      | 'systemExtraLarge'
+      | 'accessoryCircular'
+      | 'accessoryRectangular'
+      | 'accessoryInline';
+  };
 
-  export function setWidgetData(widgetName: string, data: unknown): Promise<void>;
-  export function reloadWidgets(): Promise<void>;
+  export class Widget<T extends object = object> {
+    reload(): void;
+    updateSnapshot(props: T): void;
+  }
+
+  export function createWidget<T extends object = object>(
+    name: string,
+    widget: (props: T, context: WidgetEnvironment) => React.JSX.Element
+  ): Widget<T>;
 }
 
 declare module '@expo/ui/swift-ui' {

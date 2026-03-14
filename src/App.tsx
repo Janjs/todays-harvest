@@ -12,6 +12,18 @@ import { writeWidgetPayload } from './lib/widget';
 import { HomeScreen } from './screens/HomeScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 
+const WIDGET_EMOJI_FALLBACKS: Record<string, string> = {
+  '🫑': '🌶️',
+  '🫒': '🌰',
+  '🧄': '🥔',
+  '🧅': '🍄'
+};
+
+function normalizeEmojiForWidget(emoji: string): string {
+  const trimmed = emoji.trim();
+  return WIDGET_EMOJI_FALLBACKS[trimmed] ?? trimmed;
+}
+
 function HarvestApp() {
   const [permission, setPermission] = useState<Location.PermissionStatus | 'undetermined'>('undetermined');
   const [isBooting, setIsBooting] = useState(true);
@@ -22,7 +34,10 @@ function HarvestApp() {
     city: null
   });
   const [location, setLocation] = useState<ResolvedLocation | null>(null);
-  const [data, setData] = useState<SeasonalResponse | null>(null);
+  const [fruitData, setFruitData] = useState<SeasonalResponse | null>(null);
+  const [vegetableData, setVegetableData] = useState<SeasonalResponse | null>(null);
+  const [widgetShowFruits, setWidgetShowFruits] = useState(true);
+  const [widgetShowVegetables, setWidgetShowVegetables] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
@@ -30,6 +45,59 @@ function HarvestApp() {
 
   const seedCatalog = useMutation(api.catalog.seedCatalog);
   const getSeasonalItems = useAction(api.seasonal.getSeasonalItems);
+
+  const syncWidgetPayload = useCallback(
+    async (params: {
+      targetLocation: ResolvedLocation;
+      fruitResponse: SeasonalResponse | null;
+      vegetableResponse: SeasonalResponse | null;
+      showFruits: boolean;
+      showVegetables: boolean;
+    }) => {
+      const { targetLocation, fruitResponse, vegetableResponse, showFruits, showVegetables } = params;
+      const nextLocationLabel = [targetLocation.city, targetLocation.region, targetLocation.countryCode]
+        .filter(Boolean)
+        .join(' • ');
+      const maxWidgetEmojis = 6;
+      const fruitEmojis = showFruits
+        ? (fruitResponse?.items ?? []).map((item) => normalizeEmojiForWidget(item.emoji))
+        : [];
+      const vegetableEmojis = showVegetables
+        ? (vegetableResponse?.items ?? []).map((item) => normalizeEmojiForWidget(item.emoji))
+        : [];
+      const composedEmojis: string[] = [];
+
+      if (showFruits && showVegetables) {
+        // Interleave categories so both remain visible in small-family widgets.
+        let index = 0;
+        while (
+          composedEmojis.length < maxWidgetEmojis &&
+          (index < fruitEmojis.length || index < vegetableEmojis.length)
+        ) {
+          if (index < fruitEmojis.length) {
+            composedEmojis.push(fruitEmojis[index]);
+          }
+          if (composedEmojis.length < maxWidgetEmojis && index < vegetableEmojis.length) {
+            composedEmojis.push(vegetableEmojis[index]);
+          }
+          index += 1;
+        }
+      } else if (showFruits) {
+        composedEmojis.push(...fruitEmojis.slice(0, maxWidgetEmojis));
+      } else if (showVegetables) {
+        composedEmojis.push(...vegetableEmojis.slice(0, maxWidgetEmojis));
+      }
+
+      await writeWidgetPayload({
+        title: "Today's Harvest",
+        emojis: composedEmojis.slice(0, maxWidgetEmojis),
+        locationLabel: nextLocationLabel || 'Location unavailable',
+        monthLabel: monthLabel(month),
+        updatedAt: Date.now()
+      });
+    },
+    [month]
+  );
 
   const refreshSeasonal = useCallback(
     async (targetLocation: ResolvedLocation, forceRegenerate = false) => {
@@ -41,29 +109,35 @@ function HarvestApp() {
       setError(null);
 
       try {
-        const response = await getSeasonalItems({
-          countryCode: targetLocation.countryCode,
-          region: targetLocation.region ?? undefined,
-          month,
-          category: 'fruit',
-          forceRegenerate
+        const [fruitResponse, vegetableResponse] = await Promise.all([
+          getSeasonalItems({
+            countryCode: targetLocation.countryCode,
+            region: targetLocation.region ?? undefined,
+            month,
+            category: 'fruit',
+            forceRegenerate
+          }),
+          getSeasonalItems({
+            countryCode: targetLocation.countryCode,
+            region: targetLocation.region ?? undefined,
+            month,
+            category: 'vegetable',
+            forceRegenerate
+          })
+        ]);
+
+        setFruitData(fruitResponse);
+        setVegetableData(vegetableResponse);
+
+        await syncWidgetPayload({
+          targetLocation,
+          fruitResponse,
+          vegetableResponse,
+          showFruits: widgetShowFruits,
+          showVegetables: widgetShowVegetables
         });
 
-        setData(response);
-
-        const nextLocationLabel = [targetLocation.city, targetLocation.region, targetLocation.countryCode]
-          .filter(Boolean)
-          .join(' • ');
-
-        await writeWidgetPayload({
-          title: "Today's Harvest",
-          emojis: response.items.slice(0, 6).map((item) => item.emoji),
-          locationLabel: nextLocationLabel || 'Location unavailable',
-          monthLabel: monthLabel(response.month),
-          updatedAt: response.updatedAt
-        });
-
-        return response;
+        return { fruitResponse, vegetableResponse };
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch seasonal data.');
         return null;
@@ -71,8 +145,30 @@ function HarvestApp() {
         setIsLoadingLocation(false);
       }
     },
-    [getSeasonalItems, month]
+    [getSeasonalItems, month, syncWidgetPayload, widgetShowFruits, widgetShowVegetables]
   );
+
+  useEffect(() => {
+    if (!isOnboardingComplete || !location) {
+      return;
+    }
+
+    void syncWidgetPayload({
+      targetLocation: location,
+      fruitResponse: fruitData,
+      vegetableResponse: vegetableData,
+      showFruits: widgetShowFruits,
+      showVegetables: widgetShowVegetables
+    });
+  }, [
+    fruitData,
+    isOnboardingComplete,
+    location,
+    syncWidgetPayload,
+    vegetableData,
+    widgetShowFruits,
+    widgetShowVegetables
+  ]);
 
   useEffect(() => {
     let mounted = true;
@@ -160,9 +256,18 @@ function HarvestApp() {
         {!isBooting && isOnboardingComplete ? (
           <HomeScreen
             location={location}
-            month={month}
-            data={data}
+            fruitData={fruitData}
+            vegetableData={vegetableData}
             error={error}
+            isLoading={isLoadingLocation}
+            widgetShowFruits={widgetShowFruits}
+            widgetShowVegetables={widgetShowVegetables}
+            onToggleWidgetFruits={(value) => {
+              setWidgetShowFruits(value);
+            }}
+            onToggleWidgetVegetables={(value) => {
+              setWidgetShowVegetables(value);
+            }}
             onUpdateLocation={() => {
               if (location) {
                 setDraftLocation(location);

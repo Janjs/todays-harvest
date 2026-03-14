@@ -12,7 +12,7 @@ import {
   View
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { ResolvedLocation } from '../lib/location';
 import { countryCodeToFlagUri, COUNTRY_OPTIONS } from '../lib/countries';
@@ -34,6 +34,7 @@ export function OnboardingScreen({
   onChange,
   onContinue
 }: Props) {
+  const insets = useSafeAreaInsets();
   const [countryQuery, setCountryQuery] = useState('');
   const [showCountryOptions, setShowCountryOptions] = useState(Platform.OS !== 'ios');
   const [showCountryModal, setShowCountryModal] = useState(false);
@@ -87,149 +88,170 @@ export function OnboardingScreen({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Set your location</Text>
-      <Text style={styles.subtitle}>We prefilled this from your device location. You can change it.</Text>
+      <ScrollView
+        style={styles.form}
+        contentContainerStyle={styles.formContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>Set your location</Text>
+        <Text style={styles.subtitle}>We prefilled this from your device location. You can change it.</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Country (required)</Text>
-        <Pressable style={styles.selector} onPress={openCountrySelector}>
-          <View style={styles.countryMain}>
-            {selectedCountryFlagUri ? (
-              <Image source={{ uri: selectedCountryFlagUri }} style={styles.flagIcon} />
-            ) : null}
-            <View>
-            <Text style={styles.selectorText}>
-              {selectedCountry.name}
-            </Text>
-            {selectedCountry.code ? <Text style={styles.selectorCode}>{selectedCountry.code}</Text> : null}
+        <View style={styles.card}>
+          <Text style={styles.label}>Country (required)</Text>
+          <Pressable style={styles.selector} onPress={openCountrySelector}>
+            <View style={styles.countryMain}>
+              {selectedCountryFlagUri ? (
+                <Image source={{ uri: selectedCountryFlagUri }} style={styles.flagIcon} />
+              ) : null}
+              <View>
+                <Text style={styles.selectorText}>{selectedCountry.name}</Text>
+                {selectedCountry.code ? <Text style={styles.selectorCode}>{selectedCountry.code}</Text> : null}
+              </View>
             </View>
-          </View>
-          <Text style={styles.selectorHint}>Choose</Text>
-        </Pressable>
+            <Text style={styles.selectorHint}>Choose</Text>
+          </Pressable>
 
-        {Platform.OS !== 'ios' && showCountryOptions ? (
-          <View style={styles.dropdown}>
-            <TextInput
-              style={styles.input}
-              value={countryQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="Search country or code"
-              onChangeText={setCountryQuery}
-            />
-            <ScrollView style={styles.dropdownList} nestedScrollEnabled>
-              {filteredCountries.map((country) => {
-                const countryFlagUri = countryCodeToFlagUri(country.code);
-                return (
+          {Platform.OS !== 'ios' && showCountryOptions ? (
+            <View style={styles.dropdown}>
+              <TextInput
+                style={styles.input}
+                value={countryQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="Search country or code"
+                onChangeText={setCountryQuery}
+              />
+              <ScrollView style={styles.dropdownList} nestedScrollEnabled>
+                {filteredCountries.map((country) => {
+                  const countryFlagUri = countryCodeToFlagUri(country.code);
+                  return (
+                    <Pressable
+                      key={country.code}
+                      style={styles.option}
+                      onPress={() => {
+                        applyCountryChange(country.code);
+                        setCountryQuery('');
+                        setShowCountryOptions(false);
+                      }}
+                    >
+                      <View style={styles.countryMain}>
+                        {countryFlagUri ? <Image source={{ uri: countryFlagUri }} style={styles.flagIcon} /> : null}
+                        <View>
+                          <Text style={styles.optionText}>{country.name}</Text>
+                          <Text style={styles.optionSubtext}>{country.code}</Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          ) : null}
+        </View>
+        {Platform.OS === 'ios' ? (
+          <Modal
+            animationType="slide"
+            transparent
+            visible={showCountryModal}
+            onRequestClose={() => setShowCountryModal(false)}
+          >
+            <View style={styles.modalBackdrop}>
+              <SafeAreaView style={styles.modalSheet}>
+                <View style={styles.modalActions}>
+                  <Pressable onPress={() => setShowCountryModal(false)}>
+                    <Text style={styles.modalActionText}>Cancel</Text>
+                  </Pressable>
                   <Pressable
-                    key={country.code}
-                    style={styles.option}
                     onPress={() => {
-                      applyCountryChange(country.code);
-                      setCountryQuery('');
-                      setShowCountryOptions(false);
+                      applyCountryChange(pickerCountryCode);
+                      setShowCountryModal(false);
                     }}
                   >
-                    <View style={styles.countryMain}>
-                      {countryFlagUri ? <Image source={{ uri: countryFlagUri }} style={styles.flagIcon} /> : null}
-                      <View>
-                        <Text style={styles.optionText}>{country.name}</Text>
-                        <Text style={styles.optionSubtext}>{country.code}</Text>
-                      </View>
-                    </View>
+                    <Text style={styles.modalActionTextDone}>Done</Text>
                   </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
+                </View>
+                <Picker selectedValue={pickerCountryCode} onValueChange={(value) => setPickerCountryCode(value)}>
+                  {COUNTRY_OPTIONS.map((country) => (
+                    <Picker.Item
+                      key={country.code}
+                      label={`${country.name} (${country.code})`}
+                      value={country.code}
+                    />
+                  ))}
+                </Picker>
+              </SafeAreaView>
+            </View>
+          </Modal>
         ) : null}
-      </View>
-      {Platform.OS === 'ios' ? (
-        <Modal
-          animationType="slide"
-          transparent
-          visible={showCountryModal}
-          onRequestClose={() => setShowCountryModal(false)}
+
+        <View style={styles.card}>
+          <Text style={styles.label}>State / Region (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={draftLocation.region ?? ''}
+            autoCapitalize="words"
+            autoCorrect={false}
+            placeholder="California"
+            onChangeText={(region) =>
+              onChange({
+                ...draftLocation,
+                region: region || null
+              })
+            }
+          />
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.label}>City (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={draftLocation.city ?? ''}
+            autoCapitalize="words"
+            autoCorrect={false}
+            placeholder="San Francisco"
+            onChangeText={(city) =>
+              onChange({
+                ...draftLocation,
+                city: city || null
+              })
+            }
+          />
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.label}>Location permission</Text>
+          <Text style={styles.value}>{permissionStatus}</Text>
+        </View>
+      </ScrollView>
+
+      <View style={[styles.footer, { paddingBottom: 12 + insets.bottom }]}>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Pressable
+          style={[styles.button, isSubmitting ? styles.buttonDisabled : null]}
+          disabled={isSubmitting}
+          onPress={onContinue}
         >
-          <View style={styles.modalBackdrop}>
-            <SafeAreaView style={styles.modalSheet}>
-              <View style={styles.modalActions}>
-                <Pressable onPress={() => setShowCountryModal(false)}>
-                  <Text style={styles.modalActionText}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    applyCountryChange(pickerCountryCode);
-                    setShowCountryModal(false);
-                  }}
-                >
-                  <Text style={styles.modalActionTextDone}>Done</Text>
-                </Pressable>
-              </View>
-              <Picker selectedValue={pickerCountryCode} onValueChange={(value) => setPickerCountryCode(value)}>
-                {COUNTRY_OPTIONS.map((country) => (
-                  <Picker.Item
-                    key={country.code}
-                    label={`${country.name} (${country.code})`}
-                    value={country.code}
-                  />
-                ))}
-              </Picker>
-            </SafeAreaView>
-          </View>
-        </Modal>
-      ) : null}
-
-      <View style={styles.card}>
-        <Text style={styles.label}>State / Region (optional)</Text>
-        <TextInput
-          style={styles.input}
-          value={draftLocation.region ?? ''}
-          autoCapitalize="words"
-          autoCorrect={false}
-          placeholder="California"
-          onChangeText={(region) =>
-            onChange({
-              ...draftLocation,
-              region: region || null
-            })
-          }
-        />
+          {isSubmitting ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Continue</Text>}
+        </Pressable>
       </View>
-
-      <View style={styles.card}>
-        <Text style={styles.label}>City (optional)</Text>
-        <TextInput
-          style={styles.input}
-          value={draftLocation.city ?? ''}
-          autoCapitalize="words"
-          autoCorrect={false}
-          placeholder="San Francisco"
-          onChangeText={(city) =>
-            onChange({
-              ...draftLocation,
-              city: city || null
-            })
-          }
-        />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.label}>Location permission</Text>
-        <Text style={styles.value}>{permissionStatus}</Text>
-      </View>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <Pressable style={[styles.button, isSubmitting ? styles.buttonDisabled : null]} disabled={isSubmitting} onPress={onContinue}>
-        {isSubmitting ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Continue</Text>}
-      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1
+  },
+  form: {
+    flex: 1
+  },
+  formContent: {
+    gap: 12,
+    paddingBottom: 16
+  },
+  footer: {
+    paddingTop: 12,
+    backgroundColor: '#F7F1E3',
     gap: 12
   },
   title: {
@@ -322,7 +344,6 @@ const styles = StyleSheet.create({
     color: '#223127'
   },
   button: {
-    marginTop: 8,
     backgroundColor: '#2D7C4D',
     borderRadius: 12,
     paddingVertical: 12,
