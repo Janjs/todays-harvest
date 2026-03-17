@@ -34,7 +34,7 @@ private struct TodaysHarvestWidgetEntryView: View {
     }
 
     if let values = props["emojis"] as? [String], !values.isEmpty {
-      return Array(values.prefix(6).map(sanitizeEmoji))
+      return Array(values.prefix(8).map(sanitizeEmoji))
     }
 
     if let values = props["emojis"] as? [Any] {
@@ -47,7 +47,7 @@ private struct TodaysHarvestWidgetEntryView: View {
         }
         .filter { !$0.isEmpty }
       if !normalized.isEmpty {
-        return Array(normalized.prefix(6).map(sanitizeEmoji))
+        return Array(normalized.prefix(8).map(sanitizeEmoji))
       }
     }
 
@@ -59,7 +59,7 @@ private struct TodaysHarvestWidgetEntryView: View {
     case .systemSmall:
       return Array(emojis.prefix(4))
     default:
-      return Array(emojis.prefix(6))
+      return Array(emojis.prefix(8))
     }
   }
 
@@ -68,7 +68,7 @@ private struct TodaysHarvestWidgetEntryView: View {
     case .systemSmall:
       return 2
     default:
-      return 3
+      return 4
     }
   }
 

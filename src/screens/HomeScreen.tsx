@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Image, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SeasonalResponse } from '../../shared/types';
 import { EmojiGrid } from '../components/EmojiGrid';
@@ -118,7 +118,11 @@ export function HomeScreen(props: {
 
       <View style={styles.fruitSection}>
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        {isLoading ? <Text style={styles.loading}>Loading seasonal fruits and vegetables…</Text> : null}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#4E5A52" />
+          </View>
+        ) : null}
 
         <View style={styles.sectionsStack}>
           <View style={styles.section}>
@@ -309,7 +313,8 @@ const styles = StyleSheet.create({
   error: {
     color: '#A02B1F'
   },
-  loading: {
-    color: '#4E5A52'
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center'
   }
 });

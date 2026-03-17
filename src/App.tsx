@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { ConvexProvider, useAction, useMutation } from 'convex/react';
 import * as Location from 'expo-location';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -58,7 +58,7 @@ function HarvestApp() {
       const nextLocationLabel = [targetLocation.city, targetLocation.region, targetLocation.countryCode]
         .filter(Boolean)
         .join(' • ');
-      const maxWidgetEmojis = 6;
+      const maxWidgetEmojis = 8;
       const fruitEmojis = showFruits
         ? (fruitResponse?.items ?? []).map((item) => normalizeEmojiForWidget(item.emoji))
         : [];
@@ -235,7 +235,11 @@ function HarvestApp() {
   return (
     <SafeAreaView style={styles.app} edges={['top']}>
       <View style={styles.content}>
-        {isBooting ? <Text style={styles.info}>Loading location…</Text> : null}
+        {isBooting ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator size="small" color="#4E5A52" />
+          </View>
+        ) : null}
 
         {!isBooting && !isOnboardingComplete ? (
           <OnboardingScreen
@@ -299,11 +303,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 20,
     paddingBottom: 0,
-    gap: 12
+    gap: 12,
+    justifyContent: 'center'
   },
-  info: {
-    color: '#4E5A52'
+  loadingRow: {
+    alignItems: 'center',
+    justifyContent: 'center'
   }
 });

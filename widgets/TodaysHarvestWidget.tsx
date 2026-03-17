@@ -31,7 +31,7 @@ const renderTodaysHarvestWidget = (data: WidgetPayload) => {
       <Text>{payload.title}</Text>
 
       <HStack spacing={2}>
-        {(payload.emojis.length > 0 ? payload.emojis : fallback.emojis).slice(0, 6).map((emoji, index) => (
+        {(payload.emojis.length > 0 ? payload.emojis : fallback.emojis).slice(0, 8).map((emoji, index) => (
           <Text key={`${emoji}-${index}`}>{emoji}</Text>
         ))}
       </HStack>

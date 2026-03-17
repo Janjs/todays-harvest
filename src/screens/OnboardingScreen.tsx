@@ -218,10 +218,7 @@ export function OnboardingScreen({
           />
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.label}>Location permission</Text>
-          <Text style={styles.value}>{permissionStatus}</Text>
-        </View>
+        {/* Location permission UI removed per design */}
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: 12 + insets.bottom }]}>

@@ -2,6 +2,16 @@
 
 Widget-first iOS app built with Expo + Convex. It shows produce emojis that are currently in season for the user's location and month.
 
+## Screenshots
+
+### App
+
+![Today's Harvest app](docs/screenshots/app-home.png)
+
+### Widgets
+
+![Today's Harvest widgets](docs/screenshots/widgets-home.png)
+
 ## Stack
 
 - Expo (React Native + TypeScript)
