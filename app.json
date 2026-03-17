@@ -6,7 +6,9 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.example.todaysharvest",
@@ -30,14 +32,37 @@
               "name": "TodaysHarvestWidget",
               "displayName": "Today's Harvest",
               "description": "Fruit currently in season for your location.",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium"
+              ]
             }
           ]
         }
       ]
     ],
     "extra": {
-      "convexUrl": "${CONVEX_URL}"
+      "convexUrl": "${CONVEX_URL}",
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.example.todaysharvest.ExpoWidgetsTarget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.example.todaysharvest"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "76a47ef8-12fb-40da-bedc-8a2965ca225b"
+      }
     }
   }
 }
