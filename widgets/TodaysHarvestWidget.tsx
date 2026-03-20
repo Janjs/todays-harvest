@@ -1,6 +1,7 @@
 import { Text, VStack, HStack } from '@expo/ui/swift-ui';
 import { createWidget } from 'expo-widgets';
 import { WidgetPayload } from '../shared/types';
+import { normalizeWidgetEmojiUnknown } from '../shared/widgetEmojis';
 
 const fallback: WidgetPayload = {
   title: "Today's Harvest",
@@ -31,9 +32,12 @@ const renderTodaysHarvestWidget = (data: WidgetPayload) => {
       <Text>{payload.title}</Text>
 
       <HStack spacing={2}>
-        {(payload.emojis.length > 0 ? payload.emojis : fallback.emojis).slice(0, 8).map((emoji, index) => (
+        {(payload.emojis.length > 0 ? payload.emojis : fallback.emojis)
+          .slice(0, 8)
+          .map((emoji) => normalizeWidgetEmojiUnknown(emoji))
+          .map((emoji, index) => (
           <Text key={`${emoji}-${index}`}>{emoji}</Text>
-        ))}
+          ))}
       </HStack>
 
       <Text>{payload.locationLabel} • {payload.monthLabel}</Text>

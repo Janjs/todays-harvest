@@ -5,24 +5,13 @@ import * as Location from 'expo-location';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../convex/_generated/api';
 import { SeasonalResponse } from '../shared/types';
+import { normalizeWidgetEmoji } from '../shared/widgetEmojis';
 import { convex } from './lib/convex';
 import { currentMonthInDeviceTimezone, monthLabel } from './lib/date';
 import { requestAndResolveLocation, ResolvedLocation } from './lib/location';
 import { writeWidgetPayload } from './lib/widget';
 import { HomeScreen } from './screens/HomeScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
-
-const WIDGET_EMOJI_FALLBACKS: Record<string, string> = {
-  '🫑': '🌶️',
-  '🫒': '🌰',
-  '🧄': '🥔',
-  '🧅': '🍄'
-};
-
-function normalizeEmojiForWidget(emoji: string): string {
-  const trimmed = emoji.trim();
-  return WIDGET_EMOJI_FALLBACKS[trimmed] ?? trimmed;
-}
 
 function HarvestApp() {
   const [permission, setPermission] = useState<Location.PermissionStatus | 'undetermined'>('undetermined');
@@ -60,10 +49,10 @@ function HarvestApp() {
         .join(' • ');
       const maxWidgetEmojis = 8;
       const fruitEmojis = showFruits
-        ? (fruitResponse?.items ?? []).map((item) => normalizeEmojiForWidget(item.emoji))
+        ? (fruitResponse?.items ?? []).map((item) => normalizeWidgetEmoji(item.emoji, 'fruit'))
         : [];
       const vegetableEmojis = showVegetables
-        ? (vegetableResponse?.items ?? []).map((item) => normalizeEmojiForWidget(item.emoji))
+        ? (vegetableResponse?.items ?? []).map((item) => normalizeWidgetEmoji(item.emoji, 'vegetable'))
         : [];
       const composedEmojis: string[] = [];
 

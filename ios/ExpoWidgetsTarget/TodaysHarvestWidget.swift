@@ -20,12 +20,50 @@ private struct TodaysHarvestWidgetEntryView: View {
   @Environment(\.widgetFamily) private var family
   let entry: WidgetsTimelineEntry
 
+  private var widgetSafeEmojis: Set<String> {
+    [
+      "🍎", "🍐", "🍊", "🍋", "🥕", "🍅", "🍆", "🥑"
+    ]
+  }
+
+  private var widgetEmojiFallbacks: [String: String] {
+    [
+      "🍌": "🍐",
+      "🍉": "🍊",
+      "🍇": "🍎",
+      "🍓": "🍅",
+      "🍈": "🍐",
+      "🍒": "🍅",
+      "🫐": "🍎",
+      "🍑": "🍎",
+      "🥭": "🍊",
+      "🍍": "🍐",
+      "🥝": "🍐",
+      "🥦": "🥕",
+      "🥒": "🥕",
+      "🥬": "🥕",
+      "🫑": "🥕",
+      "🌽": "🥕",
+      "🫒": "🥑",
+      "🧄": "🥕",
+      "🧅": "🥕",
+      "🍄": "🍆",
+      "🥔": "🥕",
+      "🍠": "🥕",
+      "🌰": "🥑"
+    ]
+  }
+
   private func sanitizeEmoji(_ value: String) -> String {
     let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
     if trimmed.isEmpty || trimmed.contains("\u{FFFD}") {
       return "🥕"
     }
-    return trimmed
+    let normalized = widgetEmojiFallbacks[trimmed] ?? trimmed
+    if widgetSafeEmojis.contains(normalized) {
+      return normalized
+    }
+    return "🥕"
   }
 
   private var emojis: [String] {
