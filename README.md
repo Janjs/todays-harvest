@@ -4,13 +4,16 @@ Widget-first iOS app built with Expo + Convex. It shows produce emojis that are 
 
 ## Screenshots
 
-### App
-
-![Today's Harvest app](docs/screenshots/app-home.png)
-
-### Widgets
-
-![Today's Harvest widgets](docs/screenshots/widgets-home.png)
+<table>
+  <tr>
+    <th>App</th>
+    <th>Widgets</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/app-home.png" alt="Today's Harvest app" width="300" /></td>
+    <td><img src="docs/screenshots/widgets-home.png" alt="Today's Harvest widgets" width="300" /></td>
+  </tr>
+</table>
 
 ## Stack
 
